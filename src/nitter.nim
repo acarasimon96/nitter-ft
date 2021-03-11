@@ -7,7 +7,7 @@ import jester
 import types, config, prefs, formatters, redis_cache, http_pool, tokens
 import views/[general, about]
 import routes/[
-  preferences, timeline, status, media, search, rss, list,
+  home, preferences, timeline, status, media, search, rss, list,
   unsupported, embed, resolver, router_utils]
 
 const instancesUrl = "https://github.com/zedeus/nitter/wiki/Instances"
@@ -53,9 +53,6 @@ settings:
   bindAddr = cfg.address
 
 routes:
-  get "/":
-    resp renderMain(renderSearch(), request, cfg, themePrefs())
-
   get "/about":
     resp renderMain(renderAbout(), request, cfg, themePrefs())
 
@@ -79,6 +76,7 @@ routes:
       a("another instance", href = instancesUrl) &
       " or try again later.", cfg)
 
+  extend home, ""
   extend unsupported, ""
   extend preferences, ""
   extend resolver, ""
