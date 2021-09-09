@@ -16,13 +16,13 @@ This repository is a fork of the [original Nitter repository](https://github.com
 - Lightweight (for [@nim_lang](https://nitter.net/nim_lang), 60KB vs 784KB from twitter.com)
 - RSS feeds
 - Themes
+- Clean, chronological home timeline of users you follow without a Twitter account
 - Mobile support (responsive design)
 - AGPLv3 licensed: no proprietary instances permitted
 
 ## Roadmap
 
 - Embeds
-- Account system with timeline support
 - Archiving tweets/profiles
 - Developer API
 
@@ -44,10 +44,6 @@ Using an instance of Nitter (hosted on a VPS for example), you can browse
 Twitter without JavaScript while retaining your privacy. In addition to
 respecting your privacy, Nitter is on average around 15 times lighter than
 Twitter, and in most cases serves pages faster (eg. timelines load 2-4x faster).
-
-In the future a simple account system will be added that lets you follow Twitter
-users, allowing you to have a clean chronological timeline without needing a
-Twitter account.
 
 ## Screenshot
 

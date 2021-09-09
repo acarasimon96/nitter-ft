@@ -13,6 +13,7 @@ This instance is running a build of **Nitter FT (Nitter Fast Track)**, a fork of
 * Lightweight (for [@nim_lang](/nim_lang), 60KB vs 784KB from twitter.com)
 * RSS feeds
 * Themes
+* Clean, chronological home timeline of users you follow, without a Twitter account
 * Mobile support (responsive design)
 * AGPLv3 licensed: no proprietary instances permitted
 
@@ -33,10 +34,6 @@ Using an instance of Nitter (hosted on a VPS for example), you can browse
 Twitter without JavaScript while retaining your privacy. In addition to
 respecting your privacy, Nitter is on average around 15 times lighter than
 Twitter, and in some cases serves pages faster.
-
-In the future a simple account system will be added that lets you follow Twitter
-users, allowing you to have a clean chronological timeline without needing a
-Twitter account.
 
 ## Donating
 
