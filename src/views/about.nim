@@ -3,7 +3,7 @@ import markdown
 
 const
   hash = staticExec("git log -1 --format=\"%h\"")
-  link = "https://github.com/zedeus/nitter/commit/" & hash
+  link = "https://github.com/acarasimon96/nitter-ft/commit/" & hash
 
 let
   about = markdown(readFile("public/md/about.md"))

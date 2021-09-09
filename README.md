@@ -1,27 +1,23 @@
-# Nitter
+# Nitter-FT
 
-[![Test Matrix](https://github.com/zedeus/nitter/workflows/CI/CD/badge.svg)](https://github.com/zedeus/nitter/actions?query=workflow%3ACI/CD)
-[![License](https://img.shields.io/github/license/zedeus/nitter?style=flat)](#license)
+[![License](https://img.shields.io/github/license/acarasimon96/nitter-ft?style=flat)](#license)
 
-A free and open source alternative Twitter front-end focused on privacy. \
+**Nitter FT (Nitter Fast Track)** is a free and open source alternative Twitter front-end focused on privacy, implemented in [Nim](https://nim-lang.org/). \
 Inspired by the [Invidious](https://github.com/iv-org/invidious) project.
 
+This repository is a fork of the [original Nitter repository](https://github.com/zedeus/nitter) focused on serving new features, bug fixes, and code refractors at a rapid pace.
+
+## Features
+
 - No JavaScript or ads
-- All requests go through the backend, client never talks to Twitter
+- All requests go through the backend, so that your browser never talks to Twitter
 - Prevents Twitter from tracking your IP or JavaScript fingerprint
 - Uses Twitter's unofficial API (no rate limits or developer account required)
 - Lightweight (for [@nim_lang](https://nitter.net/nim_lang), 60KB vs 784KB from twitter.com)
 - RSS feeds
 - Themes
 - Mobile support (responsive design)
-- AGPLv3 licensed, no proprietary instances permitted
-
-Liberapay: https://liberapay.com/zedeus \
-Patreon: https://patreon.com/nitter \
-BTC: bc1qp7q4qz0fgfvftm5hwz3vy284nue6jedt44kxya \
-ETH: 0x66d84bc3fd031b62857ad18c62f1ba072b011925 \
-LTC: ltc1qhsz5nxw6jw9rdtw9qssjeq2h8hqk2f85rdgpkr \
-XMR: 42hKayRoEAw4D6G6t8mQHPJHQcXqofjFuVfavqKeNMNUZfeJLJAcNU19i1bGdDvcdN6romiSscWGWJCczFLe9RFhM3d1zpL
+- AGPLv3 licensed: no proprietary instances permitted
 
 ## Roadmap
 
@@ -32,10 +28,7 @@ XMR: 42hKayRoEAw4D6G6t8mQHPJHQcXqofjFuVfavqKeNMNUZfeJLJAcNU19i1bGdDvcdN6romiSscW
 
 ## Resources
 
-The wiki contains 
-[a list of instances](https://github.com/zedeus/nitter/wiki/Instances) and
-[browser extensions](https://github.com/zedeus/nitter/wiki/Extensions)
-maintained by the community.
+See the [original repository's wiki](https://github.com/zedeus/nitter/wiki/) for [a list of instances](https://github.com/zedeus/nitter/wiki/Instances) and [browser extensions](https://github.com/zedeus/nitter/wiki/Extensions) maintained by the community.
 
 ## Why?
 
@@ -146,5 +139,15 @@ lines). If you're running the Docker image, you can do this:
 
 ## Contact
 
-Feel free to join our [Matrix channel](https://matrix.to/#/#nitter:matrix.org).
-You can email me at zedeus@pm.me if you wish to contact me personally.
+Feel free to join the [official Nitter Matrix channel](https://matrix.to/#/#nitter:matrix.org).
+
+## Donate
+
+Support the Nitter project with any of the following payment methods:
+
+Liberapay: https://liberapay.com/zedeus \
+Patreon: https://patreon.com/nitter \
+BTC: bc1qp7q4qz0fgfvftm5hwz3vy284nue6jedt44kxya \
+ETH: 0x66d84bc3fd031b62857ad18c62f1ba072b011925 \
+LTC: ltc1qhsz5nxw6jw9rdtw9qssjeq2h8hqk2f85rdgpkr \
+XMR: 42hKayRoEAw4D6G6t8mQHPJHQcXqofjFuVfavqKeNMNUZfeJLJAcNU19i1bGdDvcdN6romiSscWGWJCczFLe9RFhM3d1zpL
