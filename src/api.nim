@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-only
 import asyncdispatch, httpclient, uri, strutils
 import packedjson
 import types, query, formatters, consts, apiutils, parser
@@ -88,8 +89,8 @@ proc getTweet*(id: string; after=""): Future[Conversation] {.async.} =
 proc resolve*(url: string; prefs: Prefs): Future[string] {.async.} =
   let client = newAsyncHttpClient(maxRedirects=0)
   try:
-    let resp = await client.request(url, $HttpHead)
-    result = resp.headers["location"].replaceUrl(prefs)
+    let resp = await client.request(url, HttpHead)
+    result = resp.headers["location"].replaceUrls(prefs)
   except:
     discard
   finally:

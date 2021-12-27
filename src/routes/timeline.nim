@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-only
 import asyncdispatch, strutils, sequtils, uri, options, times
 import jester, karax/vdom
 
@@ -45,7 +46,7 @@ proc fetchSingleTimeline*(after: string; query: Query; skipRail=false):
     return
 
   var rail: Future[PhotoRail]
-  if skipRail or query.kind == media:
+  if skipRail or profile.protected or query.kind == media:
     rail = newFuture[PhotoRail]()
     rail.complete(@[])
   else:

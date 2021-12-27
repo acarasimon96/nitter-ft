@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-only
 import times, sequtils, options, tables
 import prefs_impl
 
@@ -46,7 +47,7 @@ type
     verified*: bool
     protected*: bool
     suspended*: bool
-    joinDate*: Time
+    joinDate*: DateTime
 
   VideoType* = enum
     m3u8 = "application/x-mpegURL"
@@ -126,6 +127,8 @@ type
     videoDirectMessage = "video_direct_message"
     imageDirectMessage = "image_direct_message"
     audiospace = "audiospace"
+    newsletter_publication = "newsletter_publication"
+    unknown
     
   Card* = object
     kind*: CardKind
@@ -150,7 +153,7 @@ type
     replyId*: int64
     profile*: Profile
     text*: string
-    time*: Time
+    time*: DateTime
     reply*: seq[string]
     pinned*: bool
     hasThread*: bool
@@ -222,7 +225,10 @@ type
     redisMaxConns*: int
     redisPassword*: string
 
+    replaceTwitter*: string
     replaceYouTube*: string
+    replaceReddit*: string
+    replaceInstagram*: string
 
   Rss* = object
     feed*, cursor*: string

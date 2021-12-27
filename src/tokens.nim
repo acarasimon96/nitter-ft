@@ -1,5 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
 import asyncdispatch, httpclient, times, sequtils, json, math, random
 import strutils, strformat
+import zippy
 import types, agents, consts, http_pool
 
 const
@@ -28,6 +30,7 @@ proc fetchToken(): Future[Token] {.async.} =
 
   let headers = newHttpHeaders({
     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "accept-encoding": "gzip",
     "accept-language": "en-US,en;q=0.5",
     "connection": "keep-alive",
     "user-agent": getAgent(),
@@ -41,7 +44,7 @@ proc fetchToken(): Future[Token] {.async.} =
 
   try:
     resp = clientPool.use(headers): await c.postContent(activate)
-    tokNode = parseJson(resp)["guest_token"]
+    tokNode = parseJson(uncompress(resp))["guest_token"]
     tok = tokNode.getStr($(tokNode.getInt))
 
     let time = getTime()
@@ -57,7 +60,7 @@ template expired(token: Token): untyped =
     token.lastUse < time - maxLastUse
 
 template isLimited(token: Token): untyped =
-  token == nil or (token.remaining <= 1 and token.reset > getTime()) or
+  token == nil or (token.remaining <= 5 and token.reset > getTime()) or
     token.expired
 
 proc release*(token: Token; invalid=false) =
@@ -78,8 +81,6 @@ proc getToken*(): Future[Token] {.async.} =
 
   if result == nil:
     raise rateLimitError()
-
-  dec result.remaining
 
 proc poolTokens*(amount: int) {.async.} =
   var futs: seq[Future[Token]]

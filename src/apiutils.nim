@@ -1,5 +1,6 @@
+# SPDX-License-Identifier: AGPL-3.0-only
 import httpclient, asyncdispatch, options, times, strutils, uri
-import packedjson
+import packedjson, zippy
 import types, tokens, consts, parserutils, http_pool
 
 const rl = "x-rate-limit-"
@@ -26,6 +27,7 @@ proc genHeaders*(token: Token = nil): HttpHeaders =
     "x-guest-token": if token == nil: "" else: token.tok,
     "x-twitter-active-user": "yes",
     "authority": "api.twitter.com",
+    "accept-encoding": "gzip",
     "accept-language": "en-US,en;q=0.9",
     "accept": "*/*",
     "DNT": "1"
@@ -44,7 +46,7 @@ proc fetch*(url: Uri; oldApi=false): Future[JsonNode] {.async.} =
     var resp: AsyncResponse
     let body = pool.use(headers):
       resp = await c.get($url)
-      await resp.body
+      uncompress(await resp.body)
 
     if body.startsWith('{') or body.startsWith('['):
       result = parseJson(body)
@@ -53,10 +55,8 @@ proc fetch*(url: Uri; oldApi=false): Future[JsonNode] {.async.} =
       result = newJNull()
 
     if not oldApi and resp.headers.hasKey(rl & "reset"):
-      let time = fromUnix(parseInt(resp.headers[rl & "reset"]))
-      if token.reset != time:
-        token.remaining = parseInt(resp.headers[rl & "limit"])
-      token.reset = time
+      token.remaining = parseInt(resp.headers[rl & "remaining"])
+      token.reset = fromUnix(parseInt(resp.headers[rl & "reset"]))
 
     if result.getError notin {invalidToken, forbidden, badToken}:
       token.lastUse = getTime()

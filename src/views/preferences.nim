@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-only
 import tables, macros, strutils
 import karax/[karaxdsl, vdom]
 
@@ -39,7 +40,7 @@ proc renderPreferences*(prefs: Prefs; path: string; themes: seq[string]): VNode 
 
         renderPrefs()
 
-        h4(class="cookie-note"):
+        h4(class="note"):
           text "Preferences are stored client-side using cookies without any personal information."
 
         button(`type`="submit", class="pref-submit"):

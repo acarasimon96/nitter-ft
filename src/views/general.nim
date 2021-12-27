@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-only
 import uri, strutils, strformat
 import karax/[karaxdsl, vdom]
 
@@ -20,7 +21,7 @@ proc renderNavbar*(title, rss: string; req: Request): VNode =
       tdiv(class="nav-item"):
         a(class="site-name", href="/"): text title
 
-      a(href="/"): img(class="site-logo", src="/logo.png")
+      a(href="/"): img(class="site-logo", src="/logo.png", alt="Logo")
 
       tdiv(class="nav-item right"):
         icon "search", title="Search", href="/search"
@@ -43,7 +44,7 @@ proc renderHead*(prefs: Prefs; cfg: Config; titleText=""; desc=""; video="";
   let opensearchUrl = getUrlPrefix(cfg) & "/opensearch"
 
   buildHtml(head):
-    link(rel="stylesheet", type="text/css", href="/css/style.css?v=3")
+    link(rel="stylesheet", type="text/css", href="/css/style.css?v=4")
     link(rel="stylesheet", type="text/css", href="/css/fontello.css?v=2")
 
     if theme.len > 0:
@@ -74,6 +75,7 @@ proc renderHead*(prefs: Prefs; cfg: Config; titleText=""; desc=""; video="";
         text cfg.title
 
     meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    meta(name="theme-color", content="#1F1F1F")
     meta(property="og:type", content=ogType)
     meta(property="og:title", content=(if ogTitle.len > 0: ogTitle else: titleText))
     meta(property="og:description", content=stripHtml(desc))

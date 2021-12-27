@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-only
 import strutils, options, tables, times, math
 import packedjson
 import packedjson / deserialiser
@@ -93,8 +94,8 @@ proc parsePoll(js: JsonNode): Poll =
     result.options.add vals{choice & "_label"}.getStrVal
 
   let time = vals{"end_datetime_utc", "string_value"}.getDateTime
-  if time > getTime():
-    let timeLeft = $(time - getTime())
+  if time > now():
+    let timeLeft = $(time - now())
     result.status = timeLeft[0 ..< timeLeft.find(",")]
   else:
     result.status = "Final results"
@@ -169,7 +170,7 @@ proc parseCard(js: JsonNode; urls: JsonNode): Card =
   let
     vals = ? js{"binding_values"}
     name = js{"name"}.getStr
-    kind = parseEnum[CardKind](name[(name.find(":") + 1) ..< name.len])
+    kind = parseEnum[CardKind](name[(name.find(":") + 1) ..< name.len], unknown)
 
   result = Card(
     kind: kind,
@@ -195,7 +196,7 @@ proc parseCard(js: JsonNode; urls: JsonNode): Card =
     result.url = vals{"player_url"}.getStrVal
     if "youtube.com" in result.url:
       result.url = result.url.replace("/embed/", "/watch?v=")
-  of unified:
+  of unified, unknown:
     result.title = "This card type is not supported."
   else: discard
 
@@ -269,20 +270,19 @@ proc parseTweet(js: JsonNode): Tweet =
         result.gif = some(parseGif(m))
       else: discard
 
-  let withheldInCountries = (
-    if js{"withheld_in_countries"}.kind == JArray:
-      js{"withheld_in_countries"}.to(seq[string])
-    else:
-      newSeq[string]()
-  )
+  with jsWithheld, js{"withheld_in_countries"}:
+    var withheldInCountries: seq[string]
 
-  if js{"withheld_copyright"}.getBool or
-     # XX - Content is withheld in all countries
-     "XX" in withheldInCountries or
-     # XY - Content is withheld due to a DMCA request.
-     "XY" in withheldInCountries or
-     (withheldInCountries.len > 0 and "withheld" in result.text):
-    result.available = false
+    if jsWithheld.kind == JArray:
+      withheldInCountries = jsWithheld.to(seq[string])
+
+    # XX - Content is withheld in all countries
+    # XY - Content is withheld due to a DMCA request.
+    if js{"withheld_copyright"}.getBool or
+       withheldInCountries.len > 0 and ("XX" in withheldInCountries or
+                                        "XY" in withheldInCountries or
+                                        "withheld" in result.text):
+      result.available = false
 
 proc finalizeTweet(global: GlobalObjects; id: string): Tweet =
   let intId = if id.len > 0: parseBiggestInt(id) else: 0
@@ -405,7 +405,7 @@ proc parseUsers*(js: JsonNode; after=""): Result[Profile] =
 
   for e in instructions[0]{"addEntries", "entries"}:
     let entry = e{"entryId"}.getStr
-    if "sq-I-u" in entry:
+    if "user-" in entry:
       let id = entry.getId
       if id in global.users:
         result.content.add global.users[id]

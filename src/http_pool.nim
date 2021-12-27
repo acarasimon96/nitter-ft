@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-only
 import asyncdispatch, httpclient
 
 type
@@ -5,10 +6,6 @@ type
     conns*: seq[AsyncHttpClient]
 
 var maxConns {.threadvar.}: int
-
-let keepAlive* = newHttpHeaders({
-  "Connection": "Keep-Alive"
-})
 
 proc setMaxHttpConns*(n: int) =
   maxConns = n

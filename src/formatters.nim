@@ -1,11 +1,20 @@
+# SPDX-License-Identifier: AGPL-3.0-only
 import strutils, strformat, times, uri, tables, xmltree, htmlparser
 import regex
 import types, utils, query
 
 const
   ytRegex = re"([A-z.]+\.)?youtu(be\.com|\.be)"
-  twRegex = re"(www\.|mobile\.)?twitter\.com"
-  igRegex = re"(www\.)?instagram.com"
+  igRegex = re"(www\.)?instagram\.com"
+
+  rdRegex = re"(?<![.b])((www|np|new|amp|old)\.)?reddit.com"
+  rdShortRegex = re"(?<![.b])redd\.it\/"
+  # Videos cannot be supported uniformly between Teddit and Libreddit,
+  # so v.redd.it links will not be replaced.
+  # Images aren't supported due to errors from Teddit when the image
+  # wasn't first displayed via a post on the Teddit instance.
+
+  twRegex = re"(?<![^\/> ])(?<![^\/]\/)(www\.|mobile\.)?twitter\.com"
   cards = "cards.twitter.com/cards"
   tco = "https://t.co"
 
@@ -39,19 +48,30 @@ proc shortLink*(text: string; length=28): string =
   if result.len > length:
     result = result[0 ..< length] & "…"
 
-proc replaceUrl*(url: string; prefs: Prefs; absolute=""): string =
-  result = url
-  if prefs.replaceYouTube.len > 0:
+proc replaceUrls*(body: string; prefs: Prefs; absolute=""): string =
+  result = body
+
+  if prefs.replaceYouTube.len > 0 and ytRegex in result:
     result = result.replace(ytRegex, prefs.replaceYouTube)
     if prefs.replaceYouTube in result:
       result = result.replace("/c/", "/")
-  if prefs.replaceInstagram.len > 0:
-    result = result.replace(igRegex, prefs.replaceInstagram)
-  if prefs.replaceTwitter.len > 0:
+
+  if prefs.replaceTwitter.len > 0 and
+     (twRegex in result or tco in result):
     result = result.replace(tco, "https://" & prefs.replaceTwitter & "/t.co")
     result = result.replace(cards, prefs.replaceTwitter & "/cards")
     result = result.replace(twRegex, prefs.replaceTwitter)
-  if absolute.len > 0:
+
+  if prefs.replaceReddit.len > 0 and (rdRegex in result or "redd.it" in result):
+    result = result.replace(rdShortRegex, prefs.replaceReddit & "/comments/")
+    result = result.replace(rdRegex, prefs.replaceReddit)
+    if prefs.replaceReddit in result and "/gallery/" in result:
+      result = result.replace("/gallery/", "/comments/")
+
+  if prefs.replaceInstagram.len > 0 and igRegex in result:
+    result = result.replace(igRegex, prefs.replaceInstagram)
+
+  if absolute.len > 0 and "href" in result:
     result = result.replace("href=\"/", "href=\"" & absolute & "/")
 
 proc getM3u8Url*(content: string): string =
@@ -104,12 +124,9 @@ proc getTweetTime*(tweet: Tweet): string =
 
 proc getShortTime*(tweet: Tweet): string =
   let now = now()
-  var then = tweet.time.local()
-  then.utcOffset = 0
+  let since = now - tweet.time
 
-  let since = now - then
-
-  if now.year != then.year:
+  if now.year != tweet.time.year:
     result = tweet.time.format("d MMM yyyy")
   elif since.inDays >= 1:
     result = tweet.time.format("MMM d")
