@@ -6,6 +6,7 @@ genPrefsType()
 
 type
   RateLimitError* = object of CatchableError
+  InternalError* = object of CatchableError
 
   Token* = ref object
     tok*: string
@@ -215,6 +216,9 @@ type
     hmacKey*: string
     base64Media*: bool
     minTokens*: int
+    enableRss*: bool
+    proxy*: string
+    proxyAuth*: string
 
     rssCacheTime*: int
     listCacheTime*: int

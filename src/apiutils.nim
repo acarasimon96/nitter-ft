@@ -14,10 +14,15 @@ proc genParams*(pars: openarray[(string, string)] = @[]; cursor="";
     result &= p
   if ext:
     result &= ("ext", "mediaStats")
-  if cursor.len > 0:
-    result &= ("cursor", cursor)
   if count.len > 0:
     result &= ("count", count)
+  if cursor.len > 0:
+    # The raw cursor often has plus signs, which sometimes get turned into spaces,
+    # so we need to them back into a plus
+    if " " in cursor:
+      result &= ("cursor", cursor.replace(" ", "+"))
+    else:
+      result &= ("cursor", cursor)
 
 proc genHeaders*(token: Token = nil): HttpHeaders =
   result = newHttpHeaders({
@@ -46,7 +51,9 @@ proc fetch*(url: Uri; oldApi=false): Future[JsonNode] {.async.} =
     var resp: AsyncResponse
     let body = pool.use(headers):
       resp = await c.get($url)
-      uncompress(await resp.body)
+      let raw = await resp.body
+      if raw.len == 0: ""
+      else: uncompress(raw)
 
     if body.startsWith('{') or body.startsWith('['):
       result = parseJson(body)
@@ -64,8 +71,13 @@ proc fetch*(url: Uri; oldApi=false): Future[JsonNode] {.async.} =
       echo "fetch error: ", result.getError
       release(token, true)
       raise rateLimitError()
+
+    if resp.status == $Http400:
+      raise newException(InternalError, $url)
+  except InternalError as e:
+    raise e
   except Exception as e:
-    echo "error: ", e.msg, ", token: ", token[], ", url: ", url
+    echo "error: ", e.name, ", msg: ", e.msg, ", token: ", token[], ", url: ", url
     if "length" notin e.msg and "descriptor" notin e.msg:
       release(token, true)
     raise rateLimitError()

@@ -13,6 +13,7 @@ import routes/[
   unsupported, embed, resolver, router_utils, follow]
 
 const instancesUrl = "https://github.com/zedeus/nitter/wiki/Instances"
+const issuesUrl = "https://github.com/zedeus/nitter/issues"
 
 let configPath = getEnv("NITTER_CONF_FILE", "./nitter.conf")
 let (cfg, fullCfg) = getConfig(configPath)
@@ -31,6 +32,7 @@ setCacheTimes(cfg)
 setHmacKey(cfg.hmacKey)
 setProxyEncoding(cfg.base64Media)
 setMaxHttpConns(cfg.httpMaxConns)
+setHttpProxy(cfg.proxy, cfg.proxyAuth)
 
 waitFor initRedisPool(cfg)
 stdout.write &"Connected to Redis at {cfg.redisHost}:{cfg.redisPort}\n"
@@ -72,11 +74,17 @@ routes:
   error Http404:
     resp Http404, showError("Page not found", cfg)
 
+  error InternalError:
+    echo error.exc.name, ": ", error.exc.msg
+    const link = a("open a GitHub issue", href = issuesUrl)
+    resp Http500, showError(
+      &"An error occurred, please {link} with the URL you tried to visit.", cfg)
+
   error RateLimitError:
-    echo error.exc.msg
-    resp Http429, showError("Instance has been rate limited.<br>Use " &
-      a("another instance", href = instancesUrl) &
-      " or try again later.", cfg)
+    echo error.exc.name, ": ", error.exc.msg
+    const link = a("another instance", href = instancesUrl)
+    resp Http429, showError(
+      &"Instance has been rate limited.<br>Use {link} or try again later.", cfg)
 
   extend home, ""
   extend follow, ""

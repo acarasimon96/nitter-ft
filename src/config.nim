@@ -26,6 +26,9 @@ proc getConfig*(path: string): (Config, parseCfg.Config) =
     hmacKey: cfg.get("Config", "hmacKey", "secretkey"),
     base64Media: cfg.get("Config", "base64Media", false),
     minTokens: cfg.get("Config", "tokenCount", 10),
+    enableRss: cfg.get("Config", "enableRSS", true),
+    proxy: cfg.get("Config", "proxy", ""),
+    proxyAuth: cfg.get("Config", "proxyAuth", ""),
 
     listCacheTime: cfg.get("Cache", "listMinutes", 120),
     rssCacheTime: cfg.get("Cache", "rssMinutes", 10),
