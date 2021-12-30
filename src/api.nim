@@ -22,6 +22,7 @@ proc getGraphListById*(id: string): Future[List] {.async.} =
   result = parseGraphList(js)
 
 proc getListTimeline*(id: string; after=""): Future[Timeline] {.async.} =
+  if id.len == 0: return
   let
     ps = genParams({"list_id": id, "ranking_mode": "reverse_chronological"}, after)
     url = listTimeline ? ps
@@ -39,6 +40,12 @@ proc getProfile*(username: string): Future[Profile] {.async.} =
     ps = genParams({"screen_name": username})
     url = userShow ? ps
   result = parseUserShow(await fetch(url, oldApi=true), username)
+
+proc getProfileById*(userId: string): Future[Profile] {.async.} =
+  let
+    ps = genParams({"user_id": userId})
+    url = userShow ? ps
+  result = parseUserShowId(await fetch(url, oldApi=true), userId)
 
 proc getTimeline*(id: string; after=""; replies=false): Future[Timeline] {.async.} =
   let

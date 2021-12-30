@@ -2,8 +2,8 @@
 import parsecfg except Config
 import types, strutils
 
-proc get*[T](config: parseCfg.Config; s, v: string; default: T): T =
-  let val = config.getSectionValue(s, v)
+proc get*[T](config: parseCfg.Config; section, key: string; default: T): T =
+  let val = config.getSectionValue(section, key)
   if val.len == 0: return default
 
   when T is int: parseInt(val)
