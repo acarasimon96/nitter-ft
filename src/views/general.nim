@@ -12,8 +12,10 @@ const
   lp = readFile("public/lp.svg")
 
 proc renderNavbar(cfg: Config; req: Request; rss, canonical: string): VNode =
-  var path = $(parseUri(req.path) ? filterParams(req.params))
-  if "/status" in path: path.add "#m"
+  var path = req.params.getOrDefault("referer")
+  if path.len == 0:
+    path = $(parseUri(req.path) ? filterParams(req.params))
+    if "/status/" in path: path.add "#m"
 
   buildHtml(nav):
     tdiv(class="inner-nav"):
@@ -29,7 +31,7 @@ proc renderNavbar(cfg: Config; req: Request; rss, canonical: string): VNode =
         icon "bird", title="Open in Twitter", href=canonical
         a(href="https://liberapay.com/zedeus"): verbatim lp
         icon "info", title="About", href="/about"
-        iconReferer "cog", "/settings", path, title="Preferences"
+        icon "cog", title="Preferences", href=("/settings?referer=" & encodeUrl(path))
 
 proc renderHead*(prefs: Prefs; cfg: Config; titleText=""; desc=""; video="";
                  images: seq[string] = @[]; banner=""; ogTitle=""; theme="";
@@ -43,7 +45,7 @@ proc renderHead*(prefs: Prefs; cfg: Config; titleText=""; desc=""; video="";
   let opensearchUrl = getUrlPrefix(cfg) & "/opensearch"
 
   buildHtml(head):
-    link(rel="stylesheet", type="text/css", href="/css/style.css?v=6")
+    link(rel="stylesheet", type="text/css", href="/css/style.css?v=7")
     link(rel="stylesheet", type="text/css", href="/css/fontello.css?v=2")
 
     if theme.len > 0:
@@ -86,10 +88,11 @@ proc renderHead*(prefs: Prefs; cfg: Config; titleText=""; desc=""; video="";
 
     if banner.len > 0:
       let bannerUrl = getPicUrl(banner)
-      link(rel="preload", type="image/png", href=getPicUrl(banner), `as`="image")
+      link(rel="preload", type="image/png", href=bannerUrl, `as`="image")
 
     for url in images:
-      let suffix = if "400x400" in url: "" else: "?name=small"
+      let suffix = if "400x400" in url or url.endsWith("placeholder.png"): ""
+                   else: "?name=small"
       let preloadUrl = getPicUrl(url & suffix)
       link(rel="preload", type="image/png", href=preloadUrl, `as`="image")
 

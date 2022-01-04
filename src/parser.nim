@@ -73,9 +73,9 @@ proc parseGraphList*(js: JsonNode): List =
 
   result = List(
     id: list{"id_str"}.getStr,
-    name: list{"name"}.getStr.replace(' ', '-'),
+    name: list{"name"}.getStr,
     username: list{"user", "legacy", "screen_name"}.getStr,
-    userId: list{"user", "legacy", "id_str"}.getStr,
+    userId: list{"user", "rest_id"}.getStr,
     description: list{"description"}.getStr,
     members: list{"member_count"}.getInt,
     banner: list{"custom_banner_media", "media_info", "url"}.getImageStr
@@ -128,12 +128,15 @@ proc parseVideo(js: JsonNode): Video =
     views: js{"ext", "mediaStats", "r", "ok", "viewCount"}.getStr,
     available: js{"ext_media_availability", "status"}.getStr == "available",
     title: js{"ext_alt_text"}.getStr,
-    durationMs: js{"duration_millis"}.getInt
+    durationMs: js{"video_info", "duration_millis"}.getInt
     # playbackType: mp4
   )
 
   with title, js{"additional_media_info", "title"}:
     result.title = title.getStr
+
+  with description, js{"additional_media_info", "description"}:
+    result.description = description.getStr
 
   for v in js{"video_info", "variants"}:
     result.variants.add VideoVariant(

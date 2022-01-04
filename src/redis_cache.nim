@@ -4,11 +4,12 @@ import redis, redpool, flatty, supersnappy
 
 import types, api
 
-const redisNil = "\0\0"
+const
+  redisNil = "\0\0"
+  baseCacheTime = 60 * 60
 
 var
-  pool {.threadvar.}: RedisPool
-  baseCacheTime = 60 * 60
+  pool: RedisPool
   rssCacheTime: int
   listCacheTime*: int
 
@@ -17,7 +18,9 @@ proc toFlatty*(s: var string, x: DateTime) =
   s.toFlatty(x.toTime().toUnix())
 
 proc fromFlatty*(s: string, i: var int, x: var DateTime) =
-  x = fromUnix(s.fromFlatty(int64)).utc()
+  var unix: int64
+  s.fromFlatty(i, unix)
+  x = fromUnix(unix).utc()
 
 proc setCacheTimes*(cfg: Config) =
   rssCacheTime = cfg.rssCacheTime * 60
@@ -56,7 +59,7 @@ proc initRedisPool*(cfg: Config) {.async.} =
 
 template pidKey(name: string): string = "pid:" & $(hash(name) div 1_000_000)
 template profileKey(name: string): string = "p:" & name
-template listKey(l: List): string = toLower("l:" & l.username & '/' & l.name)
+template listKey(l: List): string = "l:" & l.id
 
 proc get(query: string): Future[string] {.async.} =
   pool.withAcquire(r):
@@ -129,17 +132,17 @@ proc getCachedPhotoRail*(name: string): Future[PhotoRail] {.async.} =
     result = await getPhotoRail(name)
     await cache(result, name)
 
-proc getCachedList*(username=""; name=""; id=""): Future[List] {.async.} =
-  let list = if id.len > 0: redisNil
-             else: await get(toLower("l:" & username & '/' & name))
+proc getCachedList*(username=""; slug=""; id=""): Future[List] {.async.} =
+  let list = if id.len == 0: redisNil
+             else: await get("l:" & id)
 
   if list != redisNil:
     result = fromFlatty(uncompress(list), List)
   else:
     if id.len > 0:
-      result = await getGraphListById(id)
+      result = await getGraphList(id)
     else:
-      result = await getGraphList(username, name)
+      result = await getGraphListBySlug(username, slug)
     await cache(result)
 
 proc getCachedRss*(key: string): Future[Rss] {.async.} =

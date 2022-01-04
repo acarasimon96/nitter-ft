@@ -7,7 +7,7 @@ import ".."/[types, utils, formatters]
 
 proc getSmallPic(url: string): string =
   result = url
-  if "?" notin url:
+  if "?" notin url and not url.endsWith("placeholder.png"):
     result &= ":small"
   result = getPicUrl(result)
 
@@ -66,36 +66,35 @@ proc isPlaybackEnabled(prefs: Prefs; video: Video): bool =
   of m3u8, vmap: prefs.hlsPlayback
 
 proc renderVideoDisabled(video: Video; path: string): VNode =
-  buildHtml(tdiv):
-    img(src=getSmallPic(video.thumb))
-    tdiv(class="video-overlay"):
-      case video.playbackType
-      of mp4:
-        p: text "mp4 playback disabled in preferences"
-      of m3u8, vmap:
-        buttonReferer "/enablehls", "Enable hls playback", path
+  buildHtml(tdiv(class="video-overlay")):
+    case video.playbackType
+    of mp4:
+      p: text "mp4 playback disabled in preferences"
+    of m3u8, vmap:
+      buttonReferer "/enablehls", "Enable hls playback", path
 
 proc renderVideoUnavailable(video: Video): VNode =
-  buildHtml(tdiv):
-    img(src=getSmallPic(video.thumb))
-    tdiv(class="video-overlay"):
-      case video.reason
-      of "dmcaed":
-        p: text "This media has been disabled in response to a report by the copyright owner"
-      else:
-        p: text "This media is unavailable"
+  buildHtml(tdiv(class="video-overlay")):
+    case video.reason
+    of "dmcaed":
+      p: text "This media has been disabled in response to a report by the copyright owner"
+    else:
+      p: text "This media is unavailable"
 
 proc renderVideo*(video: Video; prefs: Prefs; path: string): VNode =
   let container =
     if video.description.len > 0 or video.title.len > 0: " card-container"
     else: ""
+
   buildHtml(tdiv(class="attachments card")):
     tdiv(class="gallery-video" & container):
       tdiv(class="attachment video-container"):
         let thumb = getSmallPic(video.thumb)
         if not video.available:
+          img(src=thumb)
           renderVideoUnavailable(video)
         elif not prefs.isPlaybackEnabled(video):
+          img(src=thumb)
           renderVideoDisabled(video, path)
         else:
           let vid = video.variants.filterIt(it.videoType == video.playbackType)
@@ -202,6 +201,8 @@ proc renderAttribution(profile: Profile): VNode =
   buildHtml(a(class="attribution", href=("/" & profile.username))):
     renderMiniAvatar(profile)
     strong: text profile.fullname
+    if profile.verified:
+      icon "ok", class="verified-icon", title="Verified account"
 
 proc renderMediaTags(tags: seq[Profile]): VNode =
   buildHtml(tdiv(class="media-tag-block")):
@@ -337,7 +338,7 @@ proc renderTweet*(tweet: Tweet; prefs: Prefs; path: string; class=""; index=0;
         renderQuote(tweet.quote.get(), prefs, path)
 
       if mainTweet:
-        p(class="tweet-published"): text getTweetTime(tweet)
+        p(class="tweet-published"): text getTime(tweet)
 
       if tweet.mediaTags.len > 0:
         renderMediaTags(tweet.mediaTags)
