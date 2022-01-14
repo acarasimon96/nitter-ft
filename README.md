@@ -71,7 +71,7 @@ Running it with the default config is fine, Nitter's default config is set to
 use the default Redis port and localhost.
 
 Here's how to create a `nitter` user, clone the repo, and build the project
-along with the scss.
+along with the scss and md files.
 
 ```bash
 # useradd -m nitter
@@ -80,6 +80,7 @@ $ git clone https://github.com/zedeus/nitter
 $ cd nitter
 $ nimble build -d:release
 $ nimble scss
+$ nimble md
 $ cp nitter.example.conf nitter.conf
 ```
 

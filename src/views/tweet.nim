@@ -11,10 +11,10 @@ proc getSmallPic(url: string): string =
     result &= ":small"
   result = getPicUrl(result)
 
-proc renderMiniAvatar(profile: Profile): VNode =
-  let url = getPicUrl(profile.getUserpic("_mini"))
+proc renderMiniAvatar(profile: Profile; prefs: Prefs): VNode =
+  let url = getPicUrl(profile.getUserPic("_mini"))
   buildHtml():
-    img(class="avatar mini", src=url)
+    img(class=(prefs.getAvatarClass & " mini"), src=url)
 
 proc renderHeader(tweet: Tweet; retweet: string; prefs: Prefs): VNode =
   buildHtml(tdiv):
@@ -29,9 +29,9 @@ proc renderHeader(tweet: Tweet; retweet: string; prefs: Prefs): VNode =
     tdiv(class="tweet-header"):
       a(class="tweet-avatar", href=("/" & tweet.profile.username)):
         var size = "_bigger"
-        if not prefs.autoplayGifs and tweet.profile.userpic.endsWith("gif"):
+        if not prefs.autoplayGifs and tweet.profile.userPic.endsWith("gif"):
           size = "_400x400"
-        genImg(tweet.profile.getUserpic(size), class="avatar")
+        genImg(tweet.profile.getUserPic(size), class=prefs.getAvatarClass)
 
       tdiv(class="tweet-name-row"):
         tdiv(class="fullname-and-username"):
@@ -97,7 +97,7 @@ proc renderVideo*(video: Video; prefs: Prefs; path: string): VNode =
           img(src=thumb)
           renderVideoDisabled(video, path)
         else:
-          let vid = video.variants.filterIt(it.videoType == video.playbackType)
+          let vid = video.variants.filterIt(it.contentType == video.playbackType)
           let source = getVidUrl(vid[0].url)
           case video.playbackType
           of mp4:
@@ -181,12 +181,16 @@ proc renderCard(card: Card; prefs: Prefs; path: string): VNode =
         tdiv(class="card-content-container"):
           renderCardContent(card)
 
+func formatStat(stat: int): string =
+  if stat > 0: insertSep($stat, ',')
+  else: ""
+
 proc renderStats(stats: TweetStats; views: string): VNode =
   buildHtml(tdiv(class="tweet-stats")):
-    span(class="tweet-stat"): icon "comment", insertSep($stats.replies, ',')
-    span(class="tweet-stat"): icon "retweet", insertSep($stats.retweets, ',')
-    span(class="tweet-stat"): icon "quote", insertSep($stats.quotes, ',')
-    span(class="tweet-stat"): icon "heart", insertSep($stats.likes, ',')
+    span(class="tweet-stat"): icon "comment", formatStat(stats.replies)
+    span(class="tweet-stat"): icon "retweet", formatStat(stats.retweets)
+    span(class="tweet-stat"): icon "quote", formatStat(stats.quotes)
+    span(class="tweet-stat"): icon "heart", formatStat(stats.likes)
     if views.len > 0:
       span(class="tweet-stat"): icon "play", insertSep(views, ',')
 
@@ -197,9 +201,9 @@ proc renderReply(tweet: Tweet): VNode =
       if i > 0: text " "
       a(href=("/" & u)): text "@" & u
 
-proc renderAttribution(profile: Profile): VNode =
+proc renderAttribution(profile: Profile; prefs: Prefs): VNode =
   buildHtml(a(class="attribution", href=("/" & profile.username))):
-    renderMiniAvatar(profile)
+    renderMiniAvatar(profile, prefs)
     strong: text profile.fullname
     if profile.verified:
       icon "ok", class="verified-icon", title="Verified account"
@@ -238,7 +242,7 @@ proc renderQuote(quote: Tweet; prefs: Prefs; path: string): VNode =
 
     tdiv(class="tweet-name-row"):
       tdiv(class="fullname-and-username"):
-        renderMiniAvatar(quote.profile)
+        renderMiniAvatar(quote.profile, prefs)
         linkUser(quote.profile, class="fullname")
         linkUser(quote.profile, class="username")
 
@@ -317,7 +321,7 @@ proc renderTweet*(tweet: Tweet; prefs: Prefs; path: string; class=""; index=0;
         verbatim replaceUrls(tweet.text, prefs) & renderLocation(tweet)
 
       if tweet.attribution.isSome:
-        renderAttribution(tweet.attribution.get())
+        renderAttribution(tweet.attribution.get(), prefs)
 
       if tweet.card.isSome:
         renderCard(tweet.card.get(), prefs, path)

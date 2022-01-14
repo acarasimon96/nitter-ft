@@ -15,12 +15,14 @@ proc renderStat(num, class: string; text=""): VNode =
 proc renderProfileCard*(profile: Profile; prefs: Prefs, path: string): VNode =
   buildHtml(tdiv(class="profile-card")):
     tdiv(class="profile-card-info"):
-      let url = getPicUrl(profile.getUserPic())
-      var size = "_400x400"
-      if prefs.autoplayGifs and profile.userpic.endsWith("gif"):
-        size = ""
+      let
+        url = getPicUrl(profile.getUserPic())
+        size =
+          if prefs.autoplayGifs and profile.userPic.endsWith("gif"): ""
+          else: "_400x400"
+
       a(class="profile-card-avatar", href=url, target="_blank"):
-        genImg(profile.getUserpic(size))
+        genImg(profile.getUserPic(size))
 
       tdiv(class="profile-card-tabs-name-and-follow"):
         tdiv():
@@ -109,8 +111,8 @@ proc renderProfile*(profile: Profile; timeline: var Timeline;
       tdiv(class="profile-banner"):
         renderBanner(profile)
 
-    let sticky = if prefs.stickyProfile: "sticky" else: "unset"
-    tdiv(class="profile-tab", style={position: sticky}):
+    let sticky = if prefs.stickyProfile: " sticky" else: ""
+    tdiv(class=(&"profile-tab{sticky}")):
       renderProfileCard(profile, prefs, path)
       if photoRail.len > 0:
         renderPhotoRail(profile, photoRail)

@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 import strutils, options, tables, times, math
-import packedjson
-import packedjson / deserialiser
+import packedjson, packedjson/deserialiser
 import types, parserutils, utils
+import experimental/parser/unifiedcard
 
 proc parseProfile(js: JsonNode; id=""): Profile =
   if js.isNull: return
@@ -12,7 +12,7 @@ proc parseProfile(js: JsonNode; id=""): Profile =
     fullname: js{"name"}.getStr,
     location: js{"location"}.getStr,
     bio: js{"description"}.getStr,
-    userpic: js{"profile_image_url_https"}.getImageStr.replace("_normal", ""),
+    userPic: js{"profile_image_url_https"}.getImageStr.replace("_normal", ""),
     banner: js.getBanner,
     following: $js{"friends_count"}.getInt,
     followers: $js{"followers_count"}.getInt,
@@ -26,41 +26,20 @@ proc parseProfile(js: JsonNode; id=""): Profile =
 
   result.expandProfileEntities(js)
 
-proc parseUserShow*(js: JsonNode; username: string): Profile =
-  if js.isNull:
-    return Profile(username: username)
-
-  with error, js{"errors"}:
+proc parseUserShow*(js: JsonNode; username=""; id=""): Profile =
+  if id.len > 0:
+    result = Profile(id: id)
+  else:
     result = Profile(username: username)
-    if error.getError == suspended:
-      result.suspended = true
-    return
 
-  result = parseProfile(js)
-
-proc parseUserShowId*(js: JsonNode; userId: string): Profile =
-  if js.isNull:
-    return Profile(id: userId)
-
-  with error, js{"errors"}:
-    result = Profile(id: userId)
-    if error.getError == suspended:
-      result.suspended = true
-    return
-
-  result = parseProfile(js)
-
-proc parseGraphProfile*(js: JsonNode; username: string): Profile =
   if js.isNull: return
+
   with error, js{"errors"}:
-    result = Profile(username: username)
     if error.getError == suspended:
       result.suspended = true
     return
 
-  let user = js{"data", "user", "legacy"}
-  let id = js{"data", "user", "rest_id"}.getStr
-  result = parseProfile(user, id)
+  result = parseProfile(js)
 
 proc parseGraphList*(js: JsonNode): List =
   if js.isNull: return
@@ -123,7 +102,6 @@ proc parseGif(js: JsonNode): Gif =
 
 proc parseVideo(js: JsonNode): Video =
   result = Video(
-    videoId: js{"id_str"}.getStr,
     thumb: js{"media_url_https"}.getImageStr,
     views: js{"ext", "mediaStats", "r", "ok", "viewCount"}.getStr,
     available: js{"ext_media_availability", "status"}.getStr == "available",
@@ -140,7 +118,7 @@ proc parseVideo(js: JsonNode): Video =
 
   for v in js{"video_info", "variants"}:
     result.variants.add VideoVariant(
-      videoType: parseEnum[VideoType](v{"content_type"}.getStr("summary")),
+      contentType: parseEnum[VideoType](v{"content_type"}.getStr("summary")),
       bitrate: v{"bitrate"}.getInt,
       url: v{"url"}.getStr
     )
@@ -150,19 +128,17 @@ proc parsePromoVideo(js: JsonNode): Video =
     thumb: js{"player_image_large"}.getImageVal,
     available: true,
     durationMs: js{"content_duration_seconds"}.getStrVal("0").parseInt * 1000,
-    playbackType: vmap,
-    videoId: js{"player_content_id"}.getStrVal(js{"card_id"}.getStrVal(
-        js{"amplify_content_id"}.getStrVal())),
+    playbackType: vmap
   )
 
   var variant = VideoVariant(
-    videoType: vmap,
+    contentType: vmap,
     url: js{"player_hls_url"}.getStrVal(js{"player_stream_url"}.getStrVal(
         js{"amplify_url_vmap"}.getStrVal()))
   )
 
   if "m3u8" in variant.url:
-    variant.videoType = m3u8
+    variant.contentType = m3u8
     result.playbackType = m3u8
 
   result.variants.add variant
@@ -175,7 +151,7 @@ proc parseBroadcast(js: JsonNode): Card =
     title: js{"broadcaster_display_name"}.getStrVal,
     text: js{"broadcast_title"}.getStrVal,
     image: image,
-    video: some Video(videoId: js{"broadcast_media_id"}.getStrVal, thumb: image)
+    video: some Video(thumb: image)
   )
 
 proc parseCard(js: JsonNode; urls: JsonNode): Card =
@@ -186,6 +162,9 @@ proc parseCard(js: JsonNode; urls: JsonNode): Card =
     vals = ? js{"binding_values"}
     name = js{"name"}.getStr
     kind = parseEnum[CardKind](name[(name.find(":") + 1) ..< name.len], unknown)
+
+  if kind == unified:
+    return parseUnifiedCard(vals{"unified_card", "string_value"}.getStr)
 
   result = Card(
     kind: kind,
@@ -211,7 +190,7 @@ proc parseCard(js: JsonNode; urls: JsonNode): Card =
     result.url = vals{"player_url"}.getStrVal
     if "youtube.com" in result.url:
       result.url = result.url.replace("/embed/", "/watch?v=")
-  of unified, unknown:
+  of audiospace, unknown:
     result.title = "This card type is not supported."
   else: discard
 

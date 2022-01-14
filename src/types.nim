@@ -8,12 +8,26 @@ type
   RateLimitError* = object of CatchableError
   InternalError* = object of CatchableError
 
+  Api* {.pure.} = enum
+    userShow
+    photoRail
+    timeline
+    search
+    tweet
+    list
+    listBySlug
+    listMembers
+
+  RateLimit* = object
+    remaining*: int
+    reset*: int
+
   Token* = ref object
     tok*: string
-    remaining*: int
-    reset*: Time
     init*: Time
     lastUse*: Time
+    pending*: int
+    apis*: Table[Api, RateLimit]
 
   Error* = enum
     null = 0
@@ -38,7 +52,7 @@ type
     location*: string
     website*: string
     bio*: string
-    userpic*: string
+    userPic*: string
     banner*: string
     following*: string
     followers*: string
@@ -56,12 +70,11 @@ type
     vmap = "video/vmap"
 
   VideoVariant* = object
-    videoType*: VideoType
+    contentType*: VideoType
     url*: string
     bitrate*: int
 
   Video* = object
-    videoId*: string
     durationMs*: int
     url*: string
     thumb*: string
@@ -133,8 +146,6 @@ type
     
   Card* = object
     kind*: CardKind
-    id*: string
-    query*: string
     url*: string
     title*: string
     dest*: string
@@ -217,6 +228,7 @@ type
     base64Media*: bool
     minTokens*: int
     enableRss*: bool
+    enableDebug*: bool
     proxy*: string
     proxyAuth*: string
 

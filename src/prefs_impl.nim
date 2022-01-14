@@ -80,6 +80,9 @@ genPrefs:
     hideReplies(checkbox, false):
       "Hide tweet replies"
 
+    squareAvatars(checkbox, false):
+      "Square profile pictures"
+
   Media:
     mp4Playback(checkbox, true):
       "Enable mp4 video playback (only for gifs)"
