@@ -14,32 +14,17 @@ proc parseProfile(js: JsonNode; id=""): Profile =
     bio: js{"description"}.getStr,
     userPic: js{"profile_image_url_https"}.getImageStr.replace("_normal", ""),
     banner: js.getBanner,
-    following: $js{"friends_count"}.getInt,
-    followers: $js{"followers_count"}.getInt,
-    tweets: $js{"statuses_count"}.getInt,
-    likes: $js{"favourites_count"}.getInt,
-    media: $js{"media_count"}.getInt,
+    following: js{"friends_count"}.getInt,
+    followers: js{"followers_count"}.getInt,
+    tweets: js{"statuses_count"}.getInt,
+    likes: js{"favourites_count"}.getInt,
+    media: js{"media_count"}.getInt,
     verified: js{"verified"}.getBool,
     protected: js{"protected"}.getBool,
     joinDate: js{"created_at"}.getTime
   )
 
   result.expandProfileEntities(js)
-
-proc parseUserShow*(js: JsonNode; username=""; id=""): Profile =
-  if id.len > 0:
-    result = Profile(id: id)
-  else:
-    result = Profile(username: username)
-
-  if js.isNull: return
-
-  with error, js{"errors"}:
-    if error.getError == suspended:
-      result.suspended = true
-    return
-
-  result = parseProfile(js)
 
 proc parseGraphList*(js: JsonNode): List =
   if js.isNull: return
