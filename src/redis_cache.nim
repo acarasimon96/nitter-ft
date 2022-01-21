@@ -13,6 +13,9 @@ var
   rssCacheTime: int
   listCacheTime*: int
 
+template dawait(future) =
+  discard await future
+
 # flatty can't serialize DateTime, so we need to define this
 proc toFlatty*(s: var string, x: DateTime) =
   s.toFlatty(x.toTime().toUnix())
@@ -33,9 +36,9 @@ proc migrate*(key, match: string) {.async.} =
       let list = await r.scan(newCursor(0), match, 100000)
       r.startPipelining()
       for item in list:
-        discard await r.del(item)
+        dawait r.del(item)
       await r.setk(key, "true")
-      discard await r.flushPipeline()
+      dawait r.flushPipeline()
 
 proc initRedisPool*(cfg: Config) {.async.} =
   try:
@@ -68,7 +71,7 @@ proc get(query: string): Future[string] {.async.} =
 
 proc setEx(key: string; time: int; data: string) {.async.} =
   pool.withAcquire(r):
-    discard await r.setEx(key, time, data)
+    dawait r.setEx(key, time, data)
 
 proc cache*(data: List) {.async.} =
   await setEx(data.listKey, listCacheTime, compress(toFlatty(data)))
@@ -77,29 +80,25 @@ proc cache*(data: PhotoRail; name: string) {.async.} =
   await setEx("pr:" & toLower(name), baseCacheTime, compress(toFlatty(data)))
 
 proc cache*(data: Profile) {.async.} =
-  if data.username.len == 0 or data.id.len == 0: return
+  if data.username.len == 0: return
   let name = toLower(data.username)
   pool.withAcquire(r):
-    r.startPipelining()
-    discard await r.setEx(name.profileKey, baseCacheTime, compress(toFlatty(data)))
-    discard await r.setEx("i:" & data.id , baseCacheTime, data.username)
-    discard await r.hSet(name.pidKey, name, data.id)
-    discard await r.flushPipeline()
+    dawait r.setEx(name.profileKey, baseCacheTime, compress(toFlatty(data)))
+    if data.id.len > 0:
+      dawait r.hSet(name.pidKey, name, data.id)
 
-proc cacheProfileId*(username, id: string) {.async.} =
+proc cacheProfileId(username, id: string) {.async.} =
   if username.len == 0 or id.len == 0: return
   let name = toLower(username)
   pool.withAcquire(r):
-    discard await r.hSet(name.pidKey, name, id)
+    dawait r.hSet(name.pidKey, name, id)
 
 proc cacheRss*(query: string; rss: Rss) {.async.} =
   let key = "rss:" & query
   pool.withAcquire(r):
-    r.startPipelining()
-    discard await r.hSet(key, "rss", rss.feed)
-    discard await r.hSet(key, "min", rss.cursor)
-    discard await r.expire(key, rssCacheTime)
-    discard await r.flushPipeline()
+    dawait r.hSet(key, "rss", rss.feed)
+    dawait r.hSet(key, "min", rss.cursor)
+    dawait r.expire(key, rssCacheTime)
 
 proc getProfileId*(username: string): Future[string] {.async.} =
   let name = toLower(username)
@@ -114,15 +113,21 @@ proc getCachedProfile*(username: string; fetch=true): Future[Profile] {.async.} 
     result = fromFlatty(uncompress(prof), Profile)
   elif fetch:
     result = await getProfile(username)
+    await cacheProfileId(result.username, result.id)
+    if result.suspended:
+      await cache(result)
 
 proc getCachedProfileUsername*(userId: string): Future[string] {.async.} =
-  let username = await get("i:" & userId)
+  let
+    key = "i:" & userId
+    username = await get(key)
+
   if username != redisNil:
     result = username
   else:
     let profile = await getProfileById(userId)
     result = profile.username
-    await cache(profile)
+    await setEx(key, baseCacheTime, result)
 
 proc getCachedPhotoRail*(name: string): Future[PhotoRail] {.async.} =
   if name.len == 0: return

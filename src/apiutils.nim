@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-import httpclient, asyncdispatch, options, sequtils, strutils, uri
+import httpclient, asyncdispatch, options, strutils, uri
 import jsony, packedjson, zippy
 import types, tokens, consts, parserutils, http_pool
-from experimental/types/common import Errors, ErrorObj
+import experimental/types/common
 
 const
   rlRemaining = "x-rate-limit-remaining"
@@ -17,6 +17,8 @@ proc genParams*(pars: openArray[(string, string)] = @[]; cursor="";
     result &= p
   if ext:
     result &= ("ext", "mediaStats")
+    result &= ("include_ext_alt_text", "true")
+    result &= ("include_ext_media_availability", "true")
   if count.len > 0:
     result &= ("count", count)
   if cursor.len > 0:
@@ -56,11 +58,17 @@ template fetchImpl(result, fetchBody) {.dirty.} =
   if token.tok.len == 0:
     raise rateLimitError()
 
+  var
+    client = pool.acquire(genHeaders(token))
+    badClient = false
+
   try:
-    var resp: AsyncResponse
-    result = pool.use(genHeaders(token)):
-      resp = await c.get($url)
-      await resp.body
+    let resp = await client.get($url)
+    result = await resp.body
+
+    if resp.status == $Http503:
+      badClient = true
+      raise newException(InternalError, result)
 
     if result.len > 0:
       if resp.headers.getOrDefault("content-encoding") == "gzip":
@@ -81,6 +89,8 @@ template fetchImpl(result, fetchBody) {.dirty.} =
     if "length" notin e.msg and "descriptor" notin e.msg:
       release(token, invalid=true)
     raise rateLimitError()
+  finally:
+    pool.release(client, badClient=badClient)
 
 proc fetch*(url: Uri; api: Api): Future[JsonNode] {.async.} =
   var body: string
@@ -108,8 +118,8 @@ proc fetchRaw*(url: Uri; api: Api): Future[string] {.async.} =
     updateToken()
 
     if result.startsWith("{\"errors"):
-      let errors = result.fromJson(Errors).errors
-      if errors.anyIt(it.code in {invalidToken, forbidden, badToken}):
+      let errors = result.fromJson(Errors)
+      if errors in {invalidToken, forbidden, badToken}:
         echo "fetch error: ", errors
         release(token, invalid=true)
         raise rateLimitError()
